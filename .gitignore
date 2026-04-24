@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.next/
+trace-dashboard/node_modules/
+trace-dashboard/.next/
+*.env
+*.env.local

@@ -1,0 +1,54 @@
+{
+  "manifest_version": 3,
+  "name": "Trace AI Layer",
+  "version": "1.0.0",
+  "description": "Measure and reduce the environmental cost of your AI prompt usage.",
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://chat.openai.com/*",
+        "*://chatgpt.com/*",
+        "*://claude.ai/*",
+        "*://gemini.google.com/*",
+        "*://perplexity.ai/*",
+        "*://chat.mistral.ai/*",
+        "*://copilot.microsoft.com/*"
+      ],
+      "js": ["src/content.js"],
+      "css": ["src/overlay/overlay.css"]
+    }
+  ],
+  "permissions": ["storage", "activeTab", "downloads"],
+  "host_permissions": [
+    "https://generativelanguage.googleapis.com/*"
+  ],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "Trace AI Layer"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "src/adapters/chatgpt.js",
+        "src/adapters/claude.js",
+        "src/adapters/gemini.js",
+        "src/adapters/perplexity.js",
+        "src/adapters/mistral.js",
+        "src/adapters/copilot.js",
+        "src/overlay/overlay.css"
+      ],
+      "matches": [
+        "*://chat.openai.com/*",
+        "*://chatgpt.com/*",
+        "*://claude.ai/*",
+        "*://gemini.google.com/*",
+        "*://perplexity.ai/*",
+        "*://chat.mistral.ai/*",
+        "*://copilot.microsoft.com/*"
+      ]
+    }
+  ]
+}

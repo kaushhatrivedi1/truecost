@@ -7,6 +7,7 @@ module.exports = {
     content: './src/content.js',
     background: './src/background.js',
     popup: './src/popup/popup.js',
+    'dashboard-bridge': './src/dashboard-bridge.js',
   },
   output: {
     path: path.resolve(__dirname, 'dist'),

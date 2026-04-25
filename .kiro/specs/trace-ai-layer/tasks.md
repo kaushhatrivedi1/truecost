@@ -194,7 +194,7 @@ Implementation proceeds in dependency order: scaffolding → pipeline (with prop
     - For any sequence of saved sessions and any `platform_id`, `per_platform[platform_id]` totals must equal the sum of that field across all sessions with matching `platform_id`
     - **Validates: Requirements 16.4**
 
-- [ ] 15. Extension popup
+- [x] 15. Extension popup
   - Create `src/popup/popup.html`: three-tab layout (Session Summary, Last Prompt, Settings) with tab navigation buttons and content panels
   - Implement `src/popup/popup.js`:
     - Tab 1: reads `totals` and `sessions` from `chrome.storage.local`, renders total tokens, carbon, water, grade distribution counts, and "Open dashboard" button (`chrome.tabs.create({ url: settings.dashboard_url })`)
@@ -210,25 +210,25 @@ Implementation proceeds in dependency order: scaffolding → pipeline (with prop
     - Test "Export JSON" triggers download with correct data shape
     - _Requirements: 17.1, 18.1, 19.1, 19.3, 19.4_
 
-- [~] 16. Background service worker
+- [x] 16. Background service worker
   - Implement `src/background.js`: register message listeners for `SAVE_SESSION`, `GET_STORAGE`, and `CLEAR_STORAGE` message types; route each to the corresponding storage helper; export storage helpers so they can be imported by tests
   - _Requirements: 16.1, 16.2, 16.3, 16.4_
 
-- [~] 17. Checkpoint — extension tests pass
+- [x] 17. Checkpoint — extension tests pass
   - Run the full extension test suite (`npm test`); ensure all unit tests and property tests pass; ask the user if any questions arise before starting the dashboard.
 
-- [~] 18. Next.js dashboard — scaffolding and shared components
+- [x] 18. Next.js dashboard — scaffolding and shared components
   - Configure `trace-dashboard/next.config.js` for App Router; verify Tailwind CSS is configured in `tailwind.config.ts` and `globals.css`
   - Create `trace-dashboard/lib/data-utils.ts`: export helper functions for aggregating session data (grade distribution counts, intent breakdown, platform breakdown, last-30-sessions carbon series, per-platform totals)
   - Create `trace-dashboard/components/StatCard.tsx`: accepts `label`, `value`, `unit`, `disclaimer?` props; renders a card with the value and an optional disclaimer note
   - _Requirements: 22.1, 24.2_
 
-- [~] 19. Next.js dashboard — seed data
+- [x] 19. Next.js dashboard — seed data
   - Create `trace-dashboard/lib/seed-data.ts`: export `PERSONAL_SEED_DATA` (30 representative `Session` objects covering all platforms, intents, and grades) and `TEAM_SEED_DATA` (the 5 hardcoded team members from the design with `name`, `prompts`, `avgGrade`, `tokens`, `topIntent`, `intentPct`)
   - Ensure no API keys or credentials appear in this file
   - _Requirements: 22.7, 23.1, 21.2_
 
-- [~] 20. Next.js dashboard — chart components
+- [x] 20. Next.js dashboard — chart components
   - Create `trace-dashboard/components/Co2LineChart.tsx` (`'use client'`): `LineChart` from Recharts showing `carbon_mg` for the last 30 sessions; handles empty array with "No data" placeholder
   - Create `trace-dashboard/components/GradeBarChart.tsx` (`'use client'`): `BarChart` showing A/B/C/D/F counts; handles empty array
   - Create `trace-dashboard/components/IntentDonutChart.tsx` (`'use client'`): `PieChart` with `innerRadius` showing intent breakdown; handles empty array
@@ -236,45 +236,45 @@ Implementation proceeds in dependency order: scaffolding → pipeline (with prop
   - Create `trace-dashboard/components/TeamBarChart.tsx` (`'use client'`): `BarChart` showing tokens per team member
   - _Requirements: 22.2, 22.3, 22.4, 22.5, 23.3_
 
-- [~] 21. Next.js dashboard — session table component
+- [x] 21. Next.js dashboard — session table component
   - Create `trace-dashboard/components/SessionTable.tsx` (`'use client'`): accepts `sessions: Session[]`; local state for sort column, sort direction, and current page; renders 10 rows per page with pagination controls; all column headers are clickable to toggle sort; renders "No data" placeholder for empty array
   - _Requirements: 22.6_
 
-- [~] 22. Next.js dashboard — personal analytics page
+- [x] 22. Next.js dashboard — personal analytics page
   - Implement `trace-dashboard/app/page.tsx`: React state holding `sessions` (initialised to `PERSONAL_SEED_DATA`); `<input type="file" accept=".json">` with `FileReader` handler that parses the uploaded file, validates `sessions` array presence, replaces state on success, shows error toast and reverts to seed data on failure; renders four `StatCard` components, `Co2LineChart`, `GradeBarChart`, `IntentDonutChart`, `PlatformDonutChart`, and `SessionTable`; all metric displays include disclaimer text
   - _Requirements: 22.1, 22.2, 22.3, 22.4, 22.5, 22.6, 22.7, 22.8, 24.2_
 
-  - [~] 22.1 Write property test — Property 19: Dashboard upload replaces seed data for all charts and the session table
+  - [x] 22.1 Write property test — Property 19: Dashboard upload replaces seed data for all charts and the session table
     - **Property 19: Dashboard upload replaces seed data for all charts and the session table**
     - For any valid JSON export containing a `sessions` array, after upload every chart and the session table must display data derived exclusively from the uploaded sessions
     - **Validates: Requirements 22.8**
 
-  - [~] 22.2 Write component tests for personal analytics page
+  - [x] 22.2 Write component tests for personal analytics page
     - Test `StatCard` renders correct values and disclaimer
     - Test each chart component renders without crashing with valid data and renders "No data" placeholder with empty data
     - Test `SessionTable` pagination and sorting
     - Test file upload triggers data replacement; invalid JSON shows error and reverts to seed data
     - _Requirements: 22.1, 22.6, 22.7, 22.8_
 
-- [~] 23. Next.js dashboard — team view page
+- [x] 23. Next.js dashboard — team view page
   - Create `trace-dashboard/components/TeamLeaderboard.tsx`: accepts `members: TeamMember[]` and `sortMetric` prop; renders a sortable table ranked by the chosen metric (default: total tokens)
   - Create `trace-dashboard/components/InsightCard.tsx`: accepts `title` and `body` props; renders a callout card
   - Implement `trace-dashboard/app/team/page.tsx`: always uses `TEAM_SEED_DATA`; renders team-level stat cards (total tokens, carbon, water), `TeamLeaderboard`, `TeamBarChart`, `PlatformDonutChart` (team-level), and at least two `InsightCard` components highlighting notable statistics; all metric displays include disclaimer text
   - _Requirements: 23.1, 23.2, 23.3, 23.4, 23.5, 24.2_
 
-  - [~] 23.1 Write component tests for team view page
+  - [x] 23.1 Write component tests for team view page
     - Test team page renders leaderboard with seed data
     - Test team-level stat cards display correct aggregated values
     - Test insight cards are present and non-empty
     - Test disclaimer text is present in all metric displays
     - _Requirements: 23.1, 23.2, 23.5, 24.2_
 
-- [~] 24. README
+- [x] 24. README
   - Create `README.md` at the repository root with all required sections: title, description, how it works, data methodology with all three citations (Luccioni et al. 2023 arXiv:2311.16863, Li et al. 2023 arXiv:2304.03271, IEA World Energy Outlook 2023 475 g CO₂/kWh), installation instructions, the three manual setup steps (optional Gemini API key, loading unpacked extension from `dist/` in Chrome, running the dashboard with `cd trace-dashboard && npm install && npm run dev`), team section, and hackathon context
   - Verify no API keys or credentials appear anywhere in the README
   - _Requirements: 24.3, 25.3, 25.4, 21.1, 21.2_
 
-- [~] 25. Final checkpoint — make all and manual checklist
+- [x] 25. Final checkpoint — make all and manual checklist
   - Run `make all` from the repository root and confirm it exits 0 with no errors
   - Verify the extension `dist/` folder is populated with bundled output
   - Verify `trace-dashboard/` builds without TypeScript or Tailwind errors (`npm run build` inside `trace-dashboard/`)

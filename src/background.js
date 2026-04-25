@@ -1,10 +1,21 @@
 // background.js — Trace AI Layer service worker
 // Handles privileged operations: storage management, message routing.
 
-import { saveSession } from './storage.js';
+import { saveSession, updateTotals, updatePerPlatform } from './storage.js';
 
-// Message listener for content scripts and popup
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+// Re-export storage helpers so they can be imported by tests
+export { saveSession, updateTotals, updatePerPlatform };
+
+/**
+ * Handles incoming messages from content scripts and popup.
+ * Routes each message type to the corresponding storage helper.
+ *
+ * @param {Object} message - The message object with a `type` field.
+ * @param {Object} _sender - The sender info (unused).
+ * @param {Function} sendResponse - Callback to send a response.
+ * @returns {boolean|undefined} Returns true for async responses.
+ */
+export function handleMessage(message, _sender, sendResponse) {
   if (message.type === 'SAVE_SESSION') {
     saveSession(message.session)
       .then(() => sendResponse({ ok: true }))
@@ -25,4 +36,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       .catch((err) => sendResponse({ ok: false, error: err.message }));
     return true;
   }
-});
+}
+
+// Register the message listener
+chrome.runtime.onMessage.addListener(handleMessage);

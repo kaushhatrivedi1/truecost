@@ -113,6 +113,11 @@ async function renderLastPromptTab() {
       <span class="metric-label">Water</span>
       <span class="metric-value">${(last.water_ml || 0).toFixed(4)} ml (est.)</span>
     </div>
+    ${last.issues && last.issues.length > 0 ? `
+    <div class="metric-row issues-row">
+      <span class="metric-label">Issues</span>
+      <span class="metric-value">${last.issues.map(i => escapeHtml(i)).join(', ')}</span>
+    </div>` : ''}
     ${last.suggestion ? `
     <div class="metric-row suggestion-row">
       <span class="metric-label">Suggestion</span>

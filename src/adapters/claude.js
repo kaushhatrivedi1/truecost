@@ -2,6 +2,7 @@
 
 const SELECTORS = [
   '.ProseMirror',
+  '[contenteditable="true"][data-placeholder]',
   '[contenteditable="true"]',
   'div[data-placeholder]',
 ];
@@ -11,14 +12,9 @@ const DEBOUNCE_MS = 800;
 let element = null;
 let debounceTimer = null;
 let observer = null;
-let isInitialising = false;
-let lastHref = '';
 let onChangeCallback = null;
+let lastHref = '';
 
-/**
- * Find the editor element using selector fallbacks.
- * @returns {Element|null}
- */
 function findElement() {
   for (const selector of SELECTORS) {
     const el = document.querySelector(selector);
@@ -27,106 +23,78 @@ function findElement() {
   return null;
 }
 
-/**
- * Handle input events with debounce.
- */
 function handleInput() {
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
     if (onChangeCallback && element) {
-      onChangeCallback(getText());
+      const text = getText();
+      if (text.trim().length > 0) onChangeCallback(text);
     }
   }, DEBOUNCE_MS);
 }
 
-/**
- * Initialise the adapter: find the editor, attach listeners, start SPA observer.
- * @param {Function} [changeCallback] - Called with prompt text after debounce.
- */
-function init(changeCallback) {
-  if (isInitialising) return;
-  isInitialising = true;
-
-  onChangeCallback = changeCallback || null;
-
-  element = findElement();
-
-  if (!element) {
-    console.warn('[Trace] Could not locate textarea on claude');
-    isInitialising = false;
-    return;
+function tryAttach() {
+  const found = findElement();
+  if (found && found !== element) {
+    if (element) element.removeEventListener('input', handleInput);
+    element = found;
+    element.addEventListener('input', handleInput);
   }
+}
 
-  element.addEventListener('input', handleInput);
-
-  // SPA detection via MutationObserver
+function init(changeCallback) {
+  onChangeCallback = changeCallback || null;
   lastHref = location.href;
+
+  tryAttach();
+
   observer = new MutationObserver(() => {
     if (location.href !== lastHref) {
       lastHref = location.href;
-      teardown();
-      setTimeout(() => init(onChangeCallback), 300);
+      if (element) { element.removeEventListener('input', handleInput); element = null; }
+      setTimeout(tryAttach, 500);
+    } else if (!element) {
+      tryAttach();
     }
   });
   observer.observe(document.body, { childList: true, subtree: true });
-
-  isInitialising = false;
 }
 
-/**
- * Remove all listeners and disconnect the observer.
- */
 function teardown() {
-  if (element) {
-    element.removeEventListener('input', handleInput);
-    element = null;
-  }
+  if (element) { element.removeEventListener('input', handleInput); element = null; }
   clearTimeout(debounceTimer);
-  debounceTimer = null;
-  if (observer) {
-    observer.disconnect();
-    observer = null;
-  }
-  isInitialising = false;
+  if (observer) { observer.disconnect(); observer = null; }
 }
 
-/**
- * Get the current prompt text from the ProseMirror editor.
- * @returns {string}
- */
 function getText() {
-  return element ? element.innerText : '';
+  return element ? (element.innerText || element.textContent || '') : '';
 }
 
-/**
- * Set text in the ProseMirror editor using execCommand so the platform
- * registers the change through its internal mutation detection.
- * @param {string} text
- */
 function setText(text) {
   if (!element) return;
   element.focus();
-  document.execCommand('selectAll');
+  document.execCommand('selectAll', false, null);
   document.execCommand('insertText', false, text);
 }
 
-/**
- * Read the active model from the Claude UI.
- * @returns {string}
- */
 function getModelId() {
-  // Try common model selector patterns on claude.ai
-  const modelSelector = document.querySelector('[data-testid="model-selector"]');
-  if (modelSelector) {
-    const text = modelSelector.textContent.trim().toLowerCase();
-    if (text) return text;
+  const selectors = [
+    '[data-testid="model-selector"]',
+    'button[aria-label*="model" i]',
+    '.model-selector',
+  ];
+  for (const sel of selectors) {
+    const el = document.querySelector(sel);
+    if (el) {
+      const text = (el.getAttribute('aria-label') || el.textContent || '').toLowerCase();
+      if (text.includes('haiku')) return 'claude-3-haiku';
+      if (text.includes('sonnet')) return 'claude-3-5-sonnet';
+      if (text.includes('opus')) return 'claude-3-opus';
+    }
   }
-  const modelBtn = document.querySelector('button[aria-label*="model" i]');
-  if (modelBtn) {
-    const label = modelBtn.getAttribute('aria-label') || modelBtn.textContent.trim();
-    if (label) return label.toLowerCase();
-  }
-  return 'default';
+  return 'claude-3-5-sonnet';
 }
 
-export { init, teardown, getText, setText, getModelId };
+function getElement() { return element; }
+
+export { init, teardown, getText, setText, getModelId, getElement };

@@ -61,4 +61,4 @@ async function geminiRewrite(originalText, apiKey) {
   };
 }
 
-module.exports = { geminiRewrite };
+export { geminiRewrite };

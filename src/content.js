@@ -1,99 +1,81 @@
 // content.js — Trace AI Layer content script
-// Injected into supported AI platform pages.
-// Responsible for platform detection, adapter loading, and wiring the analysis pipeline.
 
-import * as pipeline from './pipeline/pipeline.js';
-import * as overlay from './overlay/overlay.js';
-import * as chatgptAdapter from './adapters/chatgpt.js';
-import * as claudeAdapter from './adapters/claude.js';
-import * as geminiAdapter from './adapters/gemini.js';
-import * as perplexityAdapter from './adapters/perplexity.js';
-import * as mistralAdapter from './adapters/mistral.js';
-import * as copilotAdapter from './adapters/copilot.js';
-
-/**
- * Map hostnames to platform IDs.
- */
-const HOSTNAME_MAP = {
-  'chat.openai.com':       'chatgpt',
-  'chatgpt.com':           'chatgpt',
-  'claude.ai':             'claude',
-  'gemini.google.com':     'gemini',
-  'perplexity.ai':         'perplexity',
-  'chat.mistral.ai':       'mistral',
-  'copilot.microsoft.com': 'copilot',
+const PLATFORM_SELECTORS = {
+  'chat.openai.com':       ['#prompt-textarea', 'textarea[placeholder]', 'div[contenteditable="true"]'],
+  'chatgpt.com':           ['#prompt-textarea', 'textarea[placeholder]', 'div[contenteditable="true"]'],
+  'claude.ai':             ['.ProseMirror', 'div[contenteditable="true"]'],
+  'gemini.google.com':     ['.ql-editor', 'rich-textarea textarea', 'textarea'],
+  'perplexity.ai':         ['textarea[placeholder]', 'div[contenteditable="true"]'],
+  'chat.mistral.ai':       ['textarea', 'div[contenteditable="true"]'],
+  'copilot.microsoft.com': ['textarea', 'div[contenteditable="true"]'],
 };
 
-/**
- * Map platform IDs to their pre-imported adapter modules.
- */
-const ADAPTER_MAP = {
-  chatgpt:    chatgptAdapter,
-  claude:     claudeAdapter,
-  gemini:     geminiAdapter,
-  perplexity: perplexityAdapter,
-  mistral:    mistralAdapter,
-  copilot:    copilotAdapter,
-};
+let textareaEl = null;
+let debounceTimer = null;
+let currentText = '';
 
-/**
- * Detect the current platform from the page hostname.
- * @returns {string|null} Platform ID or null if unsupported.
- */
-function detectPlatform() {
-  const hostname = location.hostname;
-  return HOSTNAME_MAP[hostname] ?? null;
+function findTextarea() {
+  const selectors = PLATFORM_SELECTORS[location.hostname] || ['textarea', 'div[contenteditable="true"]'];
+  for (const sel of selectors) {
+    const el = document.querySelector(sel);
+    if (el) return el;
+  }
+  return null;
 }
 
-/**
- * Text-change callback wired to the adapter's debounced input event.
- * Runs the analysis pipeline and renders the overlay.
- * @param {string} promptText
- * @param {object} adapter
- */
-async function onTextChange(promptText, adapter) {
-  try {
-    const modelId = (adapter && typeof adapter.getModelId === 'function')
-      ? (adapter.getModelId() || 'default')
-      : 'default';
+function getText(el) {
+  if (!el) return '';
+  return el.value || el.innerText || el.textContent || '';
+}
 
-    const result = await pipeline.analyse(promptText, modelId);
-
-    // Check overlay_enabled setting before rendering
-    const storageData = await new Promise((resolve) => {
-      chrome.storage.local.get(['settings'], (data) => resolve(data));
-    });
-
-    const settings = storageData.settings || {};
-    const overlayEnabled = settings.overlay_enabled !== false; // default true
-
-    if (!overlayEnabled) return;
-
-    overlay.renderOverlay(result, adapter);
-  } catch (err) {
-    console.error('[Trace] Error in onTextChange:', err);
+function setText(el, text) {
+  if (!el) return;
+  el.focus();
+  if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') {
+    const nativeSetter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set;
+    if (nativeSetter) nativeSetter.call(el, text);
+    else el.value = text;
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  } else {
+    document.execCommand('selectAll', false, null);
+    document.execCommand('insertText', false, text);
   }
 }
 
-/**
- * Main entry point — detect platform, load adapter, wire callback.
- */
-async function main() {
-  try {
-    const platformId = detectPlatform();
-
-    if (!platformId) {
-      console.warn('[Trace] Unsupported platform:', location.hostname);
-      return;
+function onInput() {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    const text = getText(textareaEl);
+    if (text.trim().length > 5) {
+      currentText = text;
+      chrome.storage.local.set({ currentPrompt: text });
     }
-
-    const adapter = ADAPTER_MAP[platformId];
-
-    // Wire the text-change callback and initialise the adapter
-    adapter.init((promptText) => onTextChange(promptText, adapter));
-  } catch (err) {
-    console.error('[Trace] Initialisation error:', err);
-  }
+  }, 600);
 }
 
-main();
+// Poll for textarea every second
+setInterval(() => {
+  if (!textareaEl || !document.body.contains(textareaEl)) {
+    const found = findTextarea();
+    if (found && found !== textareaEl) {
+      if (textareaEl) textareaEl.removeEventListener('input', onInput);
+      textareaEl = found;
+      textareaEl.addEventListener('input', onInput);
+    }
+  }
+}, 1000);
+
+// Handle messages from popup
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (message.type === 'GET_PROMPT') {
+    const text = getText(textareaEl) || currentText || '';
+    sendResponse({ text });
+    return true;
+  }
+  if (message.type === 'REPLACE_PROMPT') {
+    setText(textareaEl, message.text);
+    sendResponse({ ok: true });
+    return true;
+  }
+});

@@ -2,8 +2,9 @@
 
 const SELECTORS = [
   '#prompt-textarea',
-  '[data-id="root"] textarea',
+  'textarea[data-id]',
   'form textarea',
+  'textarea[placeholder]',
 ];
 
 const DEBOUNCE_MS = 800;
@@ -11,14 +12,9 @@ const DEBOUNCE_MS = 800;
 let element = null;
 let debounceTimer = null;
 let observer = null;
-let isInitialising = false;
-let lastHref = '';
 let onChangeCallback = null;
+let lastHref = '';
 
-/**
- * Find the textarea using selector fallbacks.
- * @returns {Element|null}
- */
 function findElement() {
   for (const selector of SELECTORS) {
     const el = document.querySelector(selector);
@@ -27,107 +23,73 @@ function findElement() {
   return null;
 }
 
-/**
- * Handle input events with debounce.
- */
 function handleInput() {
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
     if (onChangeCallback && element) {
-      onChangeCallback(getText());
+      const text = getText();
+      if (text.trim().length > 0) onChangeCallback(text);
     }
   }, DEBOUNCE_MS);
 }
 
-/**
- * Initialise the adapter: find the textarea, attach listeners, start SPA observer.
- * @param {Function} [changeCallback] - Called with prompt text after debounce.
- */
-function init(changeCallback) {
-  if (isInitialising) return;
-  isInitialising = true;
-
-  onChangeCallback = changeCallback || null;
-
-  element = findElement();
-
-  if (!element) {
-    console.warn('[Trace] Could not locate textarea on chatgpt');
-    isInitialising = false;
-    return;
+function tryAttach() {
+  const found = findElement();
+  if (found && found !== element) {
+    if (element) element.removeEventListener('input', handleInput);
+    element = found;
+    element.addEventListener('input', handleInput);
   }
+}
 
-  element.addEventListener('input', handleInput);
-
-  // SPA detection via MutationObserver
+function init(changeCallback) {
+  onChangeCallback = changeCallback || null;
   lastHref = location.href;
+
+  tryAttach();
+
   observer = new MutationObserver(() => {
     if (location.href !== lastHref) {
       lastHref = location.href;
-      teardown();
-      // Re-init after a short delay to allow the new page to render
-      setTimeout(() => init(onChangeCallback), 300);
+      if (element) { element.removeEventListener('input', handleInput); element = null; }
+      setTimeout(tryAttach, 500);
+    } else if (!element) {
+      tryAttach();
     }
   });
   observer.observe(document.body, { childList: true, subtree: true });
-
-  isInitialising = false;
 }
 
-/**
- * Remove all listeners and disconnect the observer.
- */
 function teardown() {
-  if (element) {
-    element.removeEventListener('input', handleInput);
-    element = null;
-  }
+  if (element) { element.removeEventListener('input', handleInput); element = null; }
   clearTimeout(debounceTimer);
-  debounceTimer = null;
-  if (observer) {
-    observer.disconnect();
-    observer = null;
-  }
-  isInitialising = false;
+  if (observer) { observer.disconnect(); observer = null; }
 }
 
-/**
- * Get the current prompt text.
- * @returns {string}
- */
 function getText() {
-  return element ? element.value : '';
+  return element ? (element.value || element.innerText || '') : '';
 }
 
-/**
- * Set text in the textarea and dispatch React-compatible events.
- * @param {string} text
- */
 function setText(text) {
   if (!element) return;
-  element.value = text;
+  // Use native setter so React picks up the change
+  const nativeSetter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set;
+  if (nativeSetter) nativeSetter.call(element, text);
+  else element.value = text;
   element.dispatchEvent(new Event('input', { bubbles: true }));
   element.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
-/**
- * Read the active model from the ChatGPT UI.
- * @returns {string}
- */
 function getModelId() {
-  // Try the model switcher dropdown
-  const switcher = document.querySelector('.model-switcher-dropdown');
-  if (switcher) {
-    const text = switcher.textContent.trim().toLowerCase();
-    if (text) return text;
-  }
-  // Try aria-label or data attributes on model buttons
-  const modelBtn = document.querySelector('[data-testid="model-switcher-dropdown-button"]');
-  if (modelBtn) {
-    const label = modelBtn.getAttribute('aria-label') || modelBtn.textContent.trim();
-    if (label) return label.toLowerCase();
+  const btn = document.querySelector('[data-testid="model-switcher-dropdown-button"]');
+  if (btn) {
+    const label = (btn.getAttribute('aria-label') || btn.textContent || '').toLowerCase();
+    if (label.includes('mini')) return 'gpt-4o-mini';
+    if (label.includes('gpt-4o')) return 'gpt-4o';
   }
   return 'default';
 }
 
-export { init, teardown, getText, setText, getModelId };
+function getElement() { return element; }
+
+export { init, teardown, getText, setText, getModelId, getElement };

@@ -1,6 +1,6 @@
 // tokenizer.js — js-tiktoken wrapper with word-count fallback
 
-import { get_encoding } from 'js-tiktoken';
+import { getEncoding } from 'js-tiktoken';
 
 let enc = null;
 
@@ -10,7 +10,7 @@ let enc = null;
  */
 export async function loadEncoder() {
   try {
-    enc = get_encoding('cl100k_base');
+    enc = getEncoding('cl100k_base');
   } catch (e) {
     enc = null;
   }

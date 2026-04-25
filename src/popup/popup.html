@@ -9,24 +9,26 @@
 <body>
   <div id="app">
     <header>
-      <h1>Trace AI Layer</h1>
+      <div class="header-row">
+        <span class="logo">Trace</span>
+        <span class="tagline">AI Prompt Optimizer</span>
+      </div>
       <nav class="tabs">
-        <button class="tab-btn active" data-tab="summary">Summary</button>
-        <button class="tab-btn" data-tab="last-prompt">Last Prompt</button>
+        <button class="tab-btn active" data-tab="optimize">Optimize</button>
+        <button class="tab-btn" data-tab="history">History</button>
         <button class="tab-btn" data-tab="settings">Settings</button>
       </nav>
     </header>
 
     <main>
-      <!-- Tab 1: Session Summary -->
-      <section id="tab-summary" class="tab-panel active">
-        <div id="totals"></div>
-        <button id="open-dashboard">Open Dashboard</button>
+      <!-- Tab 1: Optimize current prompt -->
+      <section id="tab-optimize" class="tab-panel active">
+        <div id="optimize-content"></div>
       </section>
 
-      <!-- Tab 2: Last Prompt -->
-      <section id="tab-last-prompt" class="tab-panel">
-        <div id="last-prompt-content"></div>
+      <!-- Tab 2: Session history / summary -->
+      <section id="tab-history" class="tab-panel">
+        <div id="history-content"></div>
       </section>
 
       <!-- Tab 3: Settings -->

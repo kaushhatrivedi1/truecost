@@ -33,7 +33,7 @@ module.exports = {
         { from: 'manifest.json', to: 'manifest.json' },
         { from: 'src/popup/popup.html', to: 'popup/popup.html' },
         { from: 'src/popup/popup.css', to: 'popup/popup.css' },
-        { from: 'src/overlay/overlay.css', to: 'src/overlay/overlay.css' },
+        { from: 'src/overlay/overlay.css', to: 'overlay.css' },
       ],
     }),
   ],

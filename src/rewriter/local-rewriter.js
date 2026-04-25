@@ -1,6 +1,7 @@
 // local-rewriter.js — Rule-based local rewrite path
 
 const FILLER_REMOVALS = [
+  /^(hey,?\s+)?(hi,?\s+)?(there,?\s+)?/i,
   /\bplease\s+/gi,
   /\bkindly\s+/gi,
   /\bcan you\s+/gi,
@@ -9,6 +10,12 @@ const FILLER_REMOVALS = [
   /\bi need you to\s+/gi,
   /\bi would like you to\s+/gi,
   /\bwould you mind\s+/gi,
+  /\bi was wondering if you (could|would)\s+/gi,
+  /\bif you don'?t mind[,.]?\s*/gi,
+  /\bplease help me\s+/gi,
+  /\bi just wanted to (ask|know|understand)\s+/gi,
+  /\bthanks? (in advance|so much|a lot)[.!]?\s*$/gi,
+  /\bthank you[.!]?\s*$/gi,
 ];
 
 const VERBOSE_REPLACEMENTS = [
@@ -22,58 +29,63 @@ const VERBOSE_REPLACEMENTS = [
   [/\bprior to\b/gi, 'before'],
   [/\bsubsequent to\b/gi, 'after'],
   [/\bin spite of the fact that\b/gi, 'although'],
-  [/\bnotwithstanding the fact that\b/gi, 'although'],
   [/\bit is important to note that\b/gi, ''],
   [/\bit should be noted that\b/gi, ''],
   [/\bplease note that\b/gi, ''],
-  [/\bas a matter of fact\b/gi, 'in fact'],
   [/\bthe fact that\b/gi, 'that'],
   [/\ba large number of\b/gi, 'many'],
   [/\ba small number of\b/gi, 'few'],
+  [/\bthe majority of\b/gi, 'most'],
+  [/\bis able to\b/gi, 'can'],
   [/\bin close proximity to\b/gi, 'near'],
   [/\bat the present time\b/gi, 'now'],
+  [/\bbasically\b/gi, ''],
+  [/\bactually\b/gi, ''],
+  [/\bliterally\b/gi, ''],
+  [/\bjust\b/gi, ''],
+  [/\bkind of\b/gi, ''],
+  [/\bsort of\b/gi, ''],
 ];
 
-/**
- * Apply rule-based local rewriting to the given text.
- * @param {string} text - The original prompt text.
- * @returns {{ rewritten: string, changes: string[], source: 'Local' }}
- */
 function localRewrite(text) {
   let result = text;
   const changes = [];
 
-  // Apply filler removals
   for (const pattern of FILLER_REMOVALS) {
     const before = result;
     result = result.replace(pattern, '');
-    if (result !== before) {
-      changes.push(`Removed filler phrase matching "${pattern.source}"`);
-    }
+    if (result !== before) changes.push(`Removed filler: "${pattern.source.substring(0, 30)}"`);
   }
 
-  // Apply verbose replacements
   for (const [pattern, replacement] of VERBOSE_REPLACEMENTS) {
     const before = result;
     result = result.replace(pattern, replacement);
     if (result !== before) {
-      // Build a human-readable description using the source string
-      const readable = pattern.source
-        .replace(/\\b/g, '')
-        .replace(/\\s\+/g, ' ')
-        .trim();
-      changes.push(`Replaced "${readable}" → "${replacement}"`);
+      const readable = pattern.source.replace(/\\b/g, '').replace(/\\s\+/g, ' ').trim();
+      if (replacement) changes.push(`"${readable}" → "${replacement}"`);
+      else changes.push(`Removed "${readable}"`);
     }
   }
 
-  // Collapse multiple whitespace and trim
   result = result.replace(/\s{2,}/g, ' ').trim();
+  if (result.length > 0) {
+    result = result.charAt(0).toUpperCase() + result.slice(1);
+  }
+
+  const originalWords = text.trim().split(/\s+/).filter(Boolean).length;
+  const rewrittenWords = result.trim().split(/\s+/).filter(Boolean).length;
+  const reductionPercent = originalWords > 0
+    ? Math.round(((originalWords - rewrittenWords) / originalWords) * 100)
+    : 0;
 
   return {
     rewritten: result,
     changes: changes.slice(0, 3),
     source: 'Local',
+    reductionPercent,
+    originalWords,
+    rewrittenWords,
   };
 }
 
-module.exports = { FILLER_REMOVALS, VERBOSE_REPLACEMENTS, localRewrite };
+export { FILLER_REMOVALS, VERBOSE_REPLACEMENTS, localRewrite };

@@ -1,17 +1,9 @@
 // rewriter.js — Rewriter orchestrator (Gemini API vs local fallback)
 
-const { geminiRewrite } = require('./gemini-rewriter.js');
-const { localRewrite } = require('./local-rewriter.js');
-const { fallbackCountTokens } = require('../pipeline/tokenizer.js');
+import { geminiRewrite } from './gemini-rewriter.js';
+import { localRewrite } from './local-rewriter.js';
+import { fallbackCountTokens } from '../pipeline/tokenizer.js';
 
-/**
- * Rewrite a prompt using the Gemini API if an API key is provided,
- * falling back to the local rule-based rewriter on any error.
- *
- * @param {string} originalText - The original prompt text.
- * @param {string|null|undefined} apiKey - The Gemini API key (optional).
- * @returns {Promise<import('./types').RewriteResult>}
- */
 async function rewrite(originalText, apiKey) {
   let result;
 
@@ -41,4 +33,4 @@ async function rewrite(originalText, apiKey) {
   };
 }
 
-module.exports = { rewrite };
+export { rewrite };

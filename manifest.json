@@ -18,10 +18,10 @@
         "*://copilot.microsoft.com/*"
       ],
       "js": ["content.js"],
-      "css": ["src/overlay/overlay.css"]
+      "css": ["overlay.css"]
     }
   ],
-  "permissions": ["storage", "activeTab", "downloads"],
+  "permissions": ["storage", "activeTab", "tabs", "downloads"],
   "host_permissions": [
     "https://generativelanguage.googleapis.com/*"
   ],

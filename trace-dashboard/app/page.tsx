@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, type ChangeEvent } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { PERSONAL_SEED_DATA } from '../lib/seed-data';
 import type { Session } from '../lib/data-utils';
 import {
@@ -19,11 +19,10 @@ import SessionTable from '../components/SessionTable';
 
 const DISCLAIMER = 'Estimates based on published research. Actual values may vary.';
 
-type DataSource = 'seed' | 'extension' | 'upload';
+type DataSource = 'seed' | 'extension';
 
 export default function PersonalPage() {
   const [sessions, setSessions] = useState<Session[]>(PERSONAL_SEED_DATA);
-  const [error, setError] = useState<string | null>(null);
   const [dataSource, setDataSource] = useState<DataSource>('seed');
 
   useEffect(() => {
@@ -34,7 +33,6 @@ export default function PersonalPage() {
       if (data?.sessions && Array.isArray(data.sessions) && data.sessions.length > 0) {
         setSessions(data.sessions);
         setDataSource('extension');
-        setError(null);
       }
     };
 
@@ -56,75 +54,20 @@ export default function PersonalPage() {
   const carbonSeries = useMemo(() => last30SessionsCarbonSeries(sessions), [sessions]);
   const _platformTotals = useMemo(() => perPlatformTotals(sessions), [sessions]);
 
-  const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
-    setError(null);
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const parsed = JSON.parse(event.target?.result as string);
-        if (!parsed.sessions || !Array.isArray(parsed.sessions)) {
-          throw new Error('Invalid file: missing "sessions" array.');
-        }
-        setSessions(parsed.sessions);
-        setDataSource('upload');
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to parse JSON file.';
-        setError(message);
-        setSessions(PERSONAL_SEED_DATA);
-        setDataSource('seed');
-      }
-    };
-    reader.onerror = () => {
-      setError('Failed to read file.');
-      setSessions(PERSONAL_SEED_DATA);
-      setDataSource('seed');
-    };
-    reader.readAsText(file);
-  };
-
-  const sourceBadge = {
-    extension: { label: 'Live from Extension', className: 'bg-green-100 text-green-700 border-green-200' },
-    upload:    { label: 'Uploaded JSON',        className: 'bg-blue-100 text-blue-700 border-blue-200' },
-    seed:      { label: 'Sample Data',          className: 'bg-gray-100 text-gray-500 border-gray-200' },
-  }[dataSource];
+  const sourceBadge =
+    dataSource === 'extension'
+      ? { label: 'Live from Extension', className: 'bg-green-100 text-green-700 border-green-200' }
+      : { label: 'Sample Data',          className: 'bg-gray-100 text-gray-500 border-gray-200' };
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold">Personal Analytics</h1>
-          <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${sourceBadge.className}`}>
-            {dataSource === 'extension' && <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-500 mr-1 animate-pulse" />}
-            {sourceBadge.label}
-          </span>
-        </div>
-        {dataSource !== 'extension' && (
-          <label className="flex items-center gap-2 text-sm text-gray-600">
-            <span>Upload JSON export:</span>
-            <input
-              type="file"
-              accept=".json"
-              onChange={handleFileUpload}
-              className="text-sm file:mr-2 file:py-1 file:px-3 file:rounded file:border file:border-gray-300 file:bg-white file:text-gray-700 hover:file:bg-gray-50"
-            />
-          </label>
-        )}
+      <div className="flex items-center gap-3">
+        <h1 className="text-2xl font-bold">Personal Analytics</h1>
+        <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${sourceBadge.className}`}>
+          {dataSource === 'extension' && <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-500 mr-1 animate-pulse" />}
+          {sourceBadge.label}
+        </span>
       </div>
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm" role="alert">
-          {error}
-        </div>
-      )}
-
-      {dataSource === 'seed' && (
-        <div className="bg-amber-50 border border-amber-200 text-amber-700 px-4 py-3 rounded-lg text-sm">
-          No extension data detected. Install and enable the Trace extension, then reload this page for live data — or upload a JSON export.
-        </div>
-      )}
 
       {/* Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

@@ -81,12 +81,6 @@ export default function TeamPage() {
         </span>
       </div>
 
-      {dataSource === 'seed' && (
-        <div className="bg-amber-50 border border-amber-200 text-amber-700 px-4 py-3 rounded-lg text-sm">
-          Showing sample data. Install and enable the Trace extension, then reload for live platform breakdown.
-        </div>
-      )}
-
       {/* Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard label="Total Tokens" value={totalTokens.toLocaleString('en-US')} unit="est." disclaimer={DISCLAIMER} />

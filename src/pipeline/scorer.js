@@ -24,6 +24,40 @@ const REDUNDANT_MARKERS = [
 ];
 
 /**
+ * Measures how repetitive a text is.
+ * Returns a penalty in [0, 40].
+ */
+function repetitionPenalty(text) {
+  const words = text.toLowerCase().match(/\b\w+\b/g) || [];
+  if (words.length < 15) return 0;
+
+  // Unique-word ratio: very repetitive text has a low ratio
+  const uniqueRatio = new Set(words).size / words.length;
+
+  // Repeated bigrams ratio
+  const bigrams = {};
+  for (let i = 0; i < words.length - 1; i++) {
+    const bg = words[i] + ' ' + words[i + 1];
+    bigrams[bg] = (bigrams[bg] || 0) + 1;
+  }
+  const repeatedBigrams = Object.values(bigrams).filter((c) => c > 1).length;
+  const bigramRepeatRatio = repeatedBigrams / Math.max(words.length - 1, 1);
+
+  let penalty = 0;
+
+  // Unique-word ratio thresholds
+  if (uniqueRatio < 0.35)      penalty += 30;
+  else if (uniqueRatio < 0.45) penalty += 20;
+  else if (uniqueRatio < 0.55) penalty += 10;
+
+  // High bigram repetition on top
+  if (bigramRepeatRatio > 0.25) penalty += 10;
+  else if (bigramRepeatRatio > 0.15) penalty += 5;
+
+  return Math.min(penalty, 40);
+}
+
+/**
  * Returns { grade, gradeColor } for a given numeric score.
  * @param {number} score - A score in [0, 100]
  * @returns {{ grade: string, gradeColor: string }}
@@ -70,6 +104,9 @@ function scoreEfficiency(text, tokens) {
     if (hasRedundant) score -= 10;
   }
 
+  // Repetition penalty: -up to 40
+  score -= repetitionPenalty(text);
+
   score = Math.max(0, score);
   return { score, ...gradeFromScore(score) };
 }
@@ -80,5 +117,6 @@ export {
   FORMAT_KEYWORDS,
   REDUNDANT_MARKERS,
   gradeFromScore,
+  repetitionPenalty,
   scoreEfficiency,
 };

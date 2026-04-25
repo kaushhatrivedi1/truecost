@@ -8,6 +8,9 @@ const FILLER_REMOVALS = [
   /\bcan you\s+/gi,
   /\bcould you\s+/gi,
   /\bi wanted to (know|ask|understand|find out)\s+/gi,
+  /\bi (wanna|want to) (know|ask|understand|find out)\s+/gi,
+  /\bi (gotta|got to|need to) (know|ask|understand|find out)\s+/gi,
+  /\btell me\s+/gi,
   /\bi want you to\s+/gi,
   /\bi need you to\s+/gi,
   /\bi would like you to\s+/gi,
@@ -19,6 +22,11 @@ const FILLER_REMOVALS = [
   /\bi mean[,.]?\s*/gi,
   /\bthanks? (in advance|so much|a lot)[.!]?\s*$/gi,
   /\bthank you[.!]?\s*$/gi,
+  // Trailing sentiment / irrelevant filler at the end of a prompt
+  /[,.]?\s*it (feel|feels|felt|seems?|looks?|sounds?)\s+(good|great|nice|fine|okay|ok|amazing|wonderful|cool)[.!]?\s*$/gi,
+  /[,.]?\s*(feels? good|feels? great|feels? nice|feels? fine)[.!]?\s*$/gi,
+  /[,.]?\s*i (feel|felt|am feeling)\s+(good|great|nice|fine|okay|ok)[.!]?\s*$/gi,
+  /[,.]?\s*hope (you are|you're|ur)\s+(good|well|fine|doing well)[.!]?\s*$/gi,
 ];
 
 const VERBOSE_REPLACEMENTS = [

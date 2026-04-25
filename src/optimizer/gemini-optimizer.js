@@ -3,21 +3,33 @@
 const GEMINI_ENDPOINT =
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
-const OPTIMIZE_INSTRUCTION = [
-  'Analyze and rewrite this user prompt.',
-  'Keep the same intent.',
-  'Score prompt efficiency from 0 to 100.',
-  'Provide one short suggestion.',
-  'Rewrite the prompt to be shorter and clearer.',
-  'Do not add new requirements or examples.',
-  'Return this exact JSON shape:',
-  '{"score": 0, "intent": "", "suggestion": "", "rewritten": "", "changes": [""]}',
-  'Return JSON only.',
-].join(' ');
+const OPTIMIZE_INSTRUCTION = `You are a prompt efficiency expert. Analyze the user's prompt for these specific problems:
+- Repetition: the same idea restated multiple times in different words
+- Redundancy: sentences that add no new information
+- Vagueness: unclear or non-specific instructions
+- Verbosity: unnecessary filler words, preamble, or padding
+- Missing specifics: no output format, tone, or constraints stated when they would help
+
+Score the prompt efficiency from 0 to 100 using these rules:
+- Start at 100
+- Deduct 5-15 per unique problem found (repetition, redundancy, verbosity, vagueness each count separately)
+- A highly repetitive prompt with little new information per sentence should score below 50
+- A clear, specific, non-redundant prompt with a stated goal scores 85+
+
+Write a suggestion that:
+- Names the SPECIFIC problem in this prompt (e.g. "This prompt repeats the same instruction 8 times")
+- Gives ONE concrete fix (e.g. "State the requirement once, clearly")
+- Is 1-2 sentences max, direct and actionable
+
+Rewrite the prompt to be as short as possible while preserving the full intent. Remove all repeated ideas, keep only the clearest version of each instruction.
+
+Return this exact JSON only, no markdown:
+{"score": 0, "intent": "", "suggestion": "", "rewritten": "", "changes": [""]}`;
+
 
 async function geminiOptimize(originalText, apiKey) {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 4000);
+  const timeoutId = setTimeout(() => controller.abort(), 8000);
 
   let response;
   try {
@@ -38,8 +50,8 @@ async function geminiOptimize(originalText, apiKey) {
           },
         ],
         generationConfig: {
-          temperature: 0.1,
-          maxOutputTokens: 220,
+          temperature: 0.2,
+          maxOutputTokens: 600,
           responseMimeType: 'application/json',
         },
       }),

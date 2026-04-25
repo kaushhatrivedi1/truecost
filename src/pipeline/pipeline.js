@@ -2,7 +2,7 @@
 
 import { countTokens } from './tokenizer.js';
 import { estimateCarbon, estimateWater, computeEquivalences } from './carbon.js';
-import { scoreEfficiency, FILLER_OPENERS, VAGUE_WORDS, FORMAT_KEYWORDS, REDUNDANT_MARKERS } from './scorer.js';
+import { scoreEfficiency, repetitionPenalty, FILLER_OPENERS, VAGUE_WORDS, FORMAT_KEYWORDS, REDUNDANT_MARKERS } from './scorer.js';
 import { classifyIntent } from './classifier.js';
 
 /**
@@ -18,43 +18,46 @@ import { classifyIntent } from './classifier.js';
 function deriveSuggestion(text, tokens) {
   const lower = text.toLowerCase();
 
-  // Filler openers: -5 per match, max -25 (highest potential impact)
+  // Repetition: highest priority — catches the biggest waste
+  const repPenalty = repetitionPenalty(text);
+  if (repPenalty >= 20) {
+    return 'This prompt is highly repetitive — the same idea is restated many times. State each requirement once, clearly.';
+  }
+  if (repPenalty >= 10) {
+    return 'This prompt repeats several ideas unnecessarily. Trim redundant sentences to cut token usage.';
+  }
+
+  // Filler openers
   const hasFillerOpener = FILLER_OPENERS.some(
     (f) => lower.startsWith(f) || lower.includes('. ' + f)
   );
   if (hasFillerOpener) {
-    return 'Remove filler openers (e.g. "Can you", "Please") to improve clarity and reduce token usage.';
+    return 'Remove filler openers like "Can you" or "Please" — start directly with the task.';
   }
 
-  // Redundant context markers (only penalised if prompt > 100 tokens): -10
+  // Redundant context markers
   if (tokens > 100) {
     const hasRedundant = REDUNDANT_MARKERS.some((m) => lower.includes(m));
     if (hasRedundant) {
-      return 'Remove redundant context markers (e.g. "as I mentioned", "to reiterate") to tighten your prompt.';
+      return 'Remove phrases like "as I mentioned" or "to reiterate" — they add length without adding meaning.';
     }
   }
 
-  // Token length penalties
+  // Token length
   if (tokens > 500) {
-    return 'Your prompt is very long — consider breaking it into smaller, focused requests.';
+    return 'This prompt is very long — consider splitting it into smaller, focused requests.';
   }
   if (tokens > 300) {
-    return 'Your prompt is quite long — try condensing it to reduce token usage.';
+    return 'This prompt is quite long — try condensing it to reduce token usage.';
   }
 
-  // No output format specified: -5
-  const hasFormat = FORMAT_KEYWORDS.some((k) => lower.includes(k));
-  if (!hasFormat) {
-    return 'Add an output format specification (e.g. "as a list", "in JSON", "step by step") to get more structured responses.';
-  }
-
-  // Vague words: -3 per match, max -15
+  // Vague words
   const hasVague = VAGUE_WORDS.some((v) => lower.includes(v));
   if (hasVague) {
-    return 'Reduce vague language (e.g. "stuff", "things", "somehow") to make your prompt more precise.';
+    return 'Replace vague words like "stuff", "things", or "somehow" with specific terms.';
   }
 
-  return 'Your prompt looks efficient! Keep prompts specific and concise for best results.';
+  return '';
 }
 
 /**

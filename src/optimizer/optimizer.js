@@ -52,13 +52,24 @@ async function optimizePrompt(originalText, modelId, apiKey) {
 
   if (apiKey) {
     try {
+      console.log('[Trace] Calling Gemini API…');
       const geminiResult = await geminiOptimize(originalText, apiKey);
+      console.log('[Trace] Gemini response:', geminiResult);
+
+      // Use the lower of the two scores so local structural penalties
+      // (repetition, length) can't be overridden by a high Gemini score.
+      const finalScore = Math.min(geminiResult.score, localAnalysis.score);
+      const localWorse = finalScore < geminiResult.score;
+
       return {
         ...localAnalysis,
-        score: geminiResult.score,
-        ...gradeFromScore(geminiResult.score),
+        score: finalScore,
+        ...gradeFromScore(finalScore),
         intent: geminiResult.intent || localAnalysis.intent,
-        suggestion: geminiResult.suggestion || localAnalysis.suggestion,
+        // If local caught something Gemini missed, prefer local suggestion
+        suggestion: localWorse
+          ? (localAnalysis.suggestion || geminiResult.suggestion)
+          : (geminiResult.suggestion || localAnalysis.suggestion),
         analysisSource: 'Gemini',
         geminiError: null,
         rewrite: buildRewriteResult(

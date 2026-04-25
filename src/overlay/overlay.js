@@ -1,7 +1,9 @@
-// overlay.js — Injected Trace side panel
+// overlay.js — Trace AI Layer content script
 
 const PANEL_ID = 'tl-panel';
+const FAB_ID = 'tl-fab';
 let activeTab = 'optimize';
+let lastRenderArgs = null;
 
 function escapeHtml(str) {
   if (typeof str !== 'string') return String(str);
@@ -24,9 +26,38 @@ function gradeClass(gradeColor) {
   return map[gradeColor] || 'tl-grade-green';
 }
 
+function removeFab() {
+  const existing = document.getElementById(FAB_ID);
+  if (existing) existing.remove();
+}
+
 function removePanel() {
   const existing = document.getElementById(PANEL_ID);
   if (existing) existing.remove();
+}
+
+function showFab() {
+  removeFab();
+  if (!lastRenderArgs) return;
+
+  const fab = document.createElement('button');
+  fab.id = FAB_ID;
+  fab.setAttribute('aria-label', 'Open Trace');
+  fab.innerHTML = `
+    <div class="tl-fab-mark">
+      <span class="tl-brand-glyph tl-brand-glyph-top"></span>
+      <span class="tl-brand-glyph tl-brand-glyph-mid"></span>
+      <span class="tl-brand-glyph tl-brand-glyph-dot"></span>
+    </div>
+    <span class="tl-fab-label">Trace</span>
+  `;
+  fab.addEventListener('click', () => {
+    removeFab();
+    if (lastRenderArgs) {
+      renderOverlay(...lastRenderArgs);
+    }
+  });
+  document.body.appendChild(fab);
 }
 
 function makeSession(result, originalText) {
@@ -72,7 +103,7 @@ function buildOptimizeMarkup(originalText, rewriteResult, result) {
 
   const optimizedSection = isAlreadyOptimal
     ? `
-      <div class="tl-empty-state tl-empty-state-optimal">
+      <div class="tl-empty-state">
         <div class="tl-empty-check">
           <span class="tl-icon tl-icon-check"></span>
         </div>
@@ -81,7 +112,6 @@ function buildOptimizeMarkup(originalText, rewriteResult, result) {
           <div class="tl-empty-sub">Nothing critical to tighten right now.</div>
         </div>
       </div>
-      <div class="tl-inline-tip">${escapeHtml(result.suggestion || 'Keep prompts specific and concise for best results.')}</div>
       <div class="tl-actions">
         <button class="tl-btn-ghost" id="tl-dismiss">Dismiss</button>
       </div>
@@ -94,7 +124,7 @@ function buildOptimizeMarkup(originalText, rewriteResult, result) {
       <div class="tl-section">
         <div class="tl-label tl-label-green">Optimized Prompt <span class="tl-savings-chip">-${reductionPercent}% shorter</span></div>
         <div class="tl-rewritten" id="tl-rewritten">${escapeHtml(rewriteResult.rewritten)}</div>
-        <div class="tl-savings">${originalWords} words → ${rewrittenWords} words · Rewrite: ${rewriteResult.source}</div>
+        <div class="tl-savings">${originalWords} words → ${rewrittenWords} words · ${rewriteResult.source}</div>
       </div>
       <div class="tl-actions">
         <button class="tl-btn-primary" id="tl-replace">Replace prompt</button>
@@ -115,38 +145,50 @@ function buildOptimizeMarkup(originalText, rewriteResult, result) {
 
     ${optimizedSection}
 
-    ${result.geminiError ? `
-      <div class="tl-suggestion-card tl-suggestion-card-alert">
-        <div class="tl-label"><span class="tl-inline-icon">!</span> Gemini Status</div>
-        <div class="tl-suggestion">Gemini failed and local fallback was used. ${escapeHtml(result.geminiError)}</div>
+
+
+    ${result.suggestion ? `
+      <div class="tl-suggestion-card" style="margin-bottom:14px;">
+        <div class="tl-label">
+          <span class="tl-inline-icon">✦</span>
+          ${result.analysisSource === 'Gemini' ? 'Gemini Insight' : 'Suggestion'}
+        </div>
+        <div class="tl-suggestion">${escapeHtml(result.suggestion)}</div>
       </div>
     ` : ''}
 
-    <div class="tl-suggestion-card">
-      <div class="tl-label"><span class="tl-inline-icon">✦</span> Suggestion</div>
-      <div class="tl-suggestion">${escapeHtml(result.suggestion || 'No suggestion available.')}</div>
-    </div>
-
     <div class="tl-metrics-grid">
       <div class="tl-metric-card">
-        <div class="tl-metric-head"><span class="tl-metric-icon">◔</span><span class="tl-metric-kicker">Efficiency</span></div>
+        <div class="tl-metric-head">
+          <span class="tl-metric-icon tl-metric-icon-efficiency">📊</span>
+          <span class="tl-metric-kicker">Efficiency</span>
+        </div>
         <div class="tl-metric-value">${result.score}/100</div>
-        <div class="tl-metric-label">Efficiency · ${result.analysisSource || 'Local'}</div>
+        <div class="tl-metric-label">${result.analysisSource || 'Local'}</div>
       </div>
       <div class="tl-metric-card">
-        <div class="tl-metric-head"><span class="tl-metric-icon">⚡</span><span class="tl-metric-kicker">Carbon</span></div>
+        <div class="tl-metric-head">
+          <span class="tl-metric-icon tl-metric-icon-carbon">🌿</span>
+          <span class="tl-metric-kicker">Carbon</span>
+        </div>
         <div class="tl-metric-value">${(result.carbon?.mg || 0).toFixed(3)}</div>
         <div class="tl-metric-label">mg CO₂e</div>
       </div>
       <div class="tl-metric-card">
-        <div class="tl-metric-head"><span class="tl-metric-icon">💧</span><span class="tl-metric-kicker">Water</span></div>
+        <div class="tl-metric-head">
+          <span class="tl-metric-icon tl-metric-icon-water">💧</span>
+          <span class="tl-metric-kicker">Water</span>
+        </div>
         <div class="tl-metric-value">${(result.water?.ml || 0).toFixed(2)}</div>
         <div class="tl-metric-label">ml water</div>
       </div>
       <div class="tl-metric-card">
-        <div class="tl-metric-head"><span class="tl-metric-icon">⌁</span><span class="tl-metric-kicker">Tokens</span></div>
+        <div class="tl-metric-head">
+          <span class="tl-metric-icon tl-metric-icon-tokens">🔢</span>
+          <span class="tl-metric-kicker">Tokens</span>
+        </div>
         <div class="tl-metric-value">~${result.tokens}</div>
-        <div class="tl-metric-label">tokens</div>
+        <div class="tl-metric-label">estimated</div>
       </div>
     </div>
   `;
@@ -156,7 +198,7 @@ function buildHistoryMarkup(totals, sessions) {
   const recentSessions = sessions.slice(-4).reverse();
 
   return `
-    <div class="tl-metrics-grid">
+    <div class="tl-metrics-grid" style="margin-bottom:14px;">
       <div class="tl-metric-card">
         <div class="tl-metric-value">${(totals.session_count || 0).toLocaleString()}</div>
         <div class="tl-metric-label">Prompts</div>
@@ -259,6 +301,9 @@ async function renderOverlay(result, adapter, originalText, onClose) {
   const sessions = data.sessions || [];
   const totals = data.totals || {};
 
+  lastRenderArgs = [result, adapter, originalText, onClose];
+
+  removeFab();
   removePanel();
 
   const panel = document.createElement('aside');
@@ -309,12 +354,14 @@ async function renderOverlay(result, adapter, originalText, onClose) {
 
   panel.querySelector('#tl-close')?.addEventListener('click', () => {
     removePanel();
+    showFab();
     saveSession(result, originalText);
     if (typeof onClose === 'function') onClose();
   });
 
   panel.querySelector('#tl-dismiss')?.addEventListener('click', () => {
     removePanel();
+    showFab();
     saveSession(result, originalText);
     if (typeof onClose === 'function') onClose();
   });
@@ -326,7 +373,7 @@ async function renderOverlay(result, adapter, originalText, onClose) {
       if (replaced || !adapter || typeof adapter.setText !== 'function') return;
       adapter.setText(rewriteResult.rewritten);
       replaced = true;
-      replaceBtn.textContent = 'Replaced';
+      replaceBtn.textContent = 'Replaced ✓';
       replaceBtn.classList.add('tl-btn-replaced');
       replaceBtn.disabled = true;
     });

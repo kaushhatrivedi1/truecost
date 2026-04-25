@@ -7,6 +7,15 @@
 import * as fc from 'fast-check';
 import { gradeFromScore, scoreEfficiency } from '../scorer.js';
 
+describe('scoreEfficiency — conversational filler penalties', () => {
+  it('penalises obvious filler-heavy prompts', () => {
+    const text = 'Good morning I wanted to know what is the time, I mean what is the time rn, like currently';
+    const { score, grade } = scoreEfficiency(text, text.split(/\s+/).length);
+    expect(score).toBeLessThan(90);
+    expect(grade).not.toBe('A');
+  });
+});
+
 /**
  * Property 8: Efficiency score is always in the range [0, 100]
  * Validates: Requirements 10.1

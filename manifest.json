@@ -3,6 +3,9 @@
   "name": "Trace AI Layer",
   "version": "1.0.0",
   "description": "Measure and reduce the environmental cost of your AI prompt usage.",
+  "icons": {
+    "128": "assets/trace-icon.svg"
+  },
   "background": {
     "service_worker": "background.js"
   },
@@ -26,6 +29,9 @@
     "https://generativelanguage.googleapis.com/*"
   ],
   "action": {
+    "default_icon": {
+      "128": "assets/trace-icon.svg"
+    },
     "default_popup": "popup/popup.html",
     "default_title": "Trace AI Layer"
   },

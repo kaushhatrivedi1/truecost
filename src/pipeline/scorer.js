@@ -2,12 +2,15 @@
 
 const FILLER_OPENERS = [
   'can you', 'could you', 'please', 'i want you to', 'i need you to',
-  'i would like you to', 'kindly', 'would you mind'
+  'i would like you to', 'kindly', 'would you mind',
+  'good morning', 'good afternoon', 'good evening',
+  'i wanted to know', 'i mean'
 ];
 
 const VAGUE_WORDS = [
   'stuff', 'things', 'something', 'somehow', 'whatever', 'etc',
-  'various', 'some kind of', 'a bit', 'sort of', 'kind of'
+  'various', 'some kind of', 'a bit', 'sort of', 'kind of',
+  'rn', 'currently'
 ];
 
 const FORMAT_KEYWORDS = [
@@ -45,7 +48,7 @@ function scoreEfficiency(text, tokens) {
 
   // Filler openers: -5 per match, max -25
   const fillerCount = FILLER_OPENERS.filter(
-    (f) => lower.startsWith(f) || lower.includes('. ' + f)
+    (f) => lower.startsWith(f) || lower.includes('. ' + f) || lower.includes(', ' + f) || lower.includes(' ' + f)
   ).length;
   score -= Math.min(fillerCount * 5, 25);
 

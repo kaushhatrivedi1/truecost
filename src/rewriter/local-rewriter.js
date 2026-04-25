@@ -1,11 +1,13 @@
 // local-rewriter.js — Rule-based local rewrite path
 
 const FILLER_REMOVALS = [
-  /^(hey,?\s+)?(hi,?\s+)?(there,?\s+)?/i,
+  /^good\s+(morning|afternoon|evening|night)[,!.]?\s*/i,
+  /^(?:hey|hi|hello)(?:,\s*there)?[,.]?\s*/i,
   /\bplease\s+/gi,
   /\bkindly\s+/gi,
   /\bcan you\s+/gi,
   /\bcould you\s+/gi,
+  /\bi wanted to (know|ask|understand|find out)\s+/gi,
   /\bi want you to\s+/gi,
   /\bi need you to\s+/gi,
   /\bi would like you to\s+/gi,
@@ -14,6 +16,7 @@ const FILLER_REMOVALS = [
   /\bif you don'?t mind[,.]?\s*/gi,
   /\bplease help me\s+/gi,
   /\bi just wanted to (ask|know|understand)\s+/gi,
+  /\bi mean[,.]?\s*/gi,
   /\bthanks? (in advance|so much|a lot)[.!]?\s*$/gi,
   /\bthank you[.!]?\s*$/gi,
 ];
@@ -43,6 +46,9 @@ const VERBOSE_REPLACEMENTS = [
   [/\bactually\b/gi, ''],
   [/\bliterally\b/gi, ''],
   [/\bjust\b/gi, ''],
+  [/\brn\b/gi, 'now'],
+  [/\blike currently\b/gi, 'now'],
+  [/\bcurrently\b/gi, 'now'],
   [/\bkind of\b/gi, ''],
   [/\bsort of\b/gi, ''],
 ];
@@ -68,6 +74,15 @@ function localRewrite(text) {
   }
 
   result = result.replace(/\s{2,}/g, ' ').trim();
+  result = result.replace(/\s+([,.?!])/g, '$1');
+  result = result.replace(/,\s*,+/g, ', ');
+  result = result.replace(/\b((?:\w+\s+){2,6}\w+)\b,\s*\1\b/gi, '$1');
+  result = result.replace(/\bnow\s+now\b/gi, 'now');
+  result = result.replace(/\bnow\s+now(?=[?.!]|$)/gi, 'now');
+  result = result.replace(/\b(\w+)\s+\1(?=[?.!]|$)/gi, '$1');
+  result = result.replace(/\s+(\w+),\s*\1$/i, ' $1');
+  result = result.replace(/,\s*now$/i, ' now');
+  if (result && !/[.?!]$/.test(result)) result += '?';
   if (result.length > 0) {
     result = result.charAt(0).toUpperCase() + result.slice(1);
   }

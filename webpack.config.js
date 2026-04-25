@@ -31,8 +31,10 @@ module.exports = {
     new CopyPlugin({
       patterns: [
         { from: 'manifest.json', to: 'manifest.json' },
+        { from: 'assets/trace-icon.svg', to: 'assets/trace-icon.svg' },
         { from: 'src/popup/popup.html', to: 'popup/popup.html' },
         { from: 'src/popup/popup.css', to: 'popup/popup.css' },
+        { from: 'src/popup/trace-mark.svg', to: 'popup/trace-mark.svg' },
         { from: 'src/overlay/overlay.css', to: 'overlay.css' },
       ],
     }),

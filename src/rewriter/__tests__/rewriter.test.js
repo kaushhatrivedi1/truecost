@@ -199,6 +199,35 @@ describe('rewrite — successful Gemini response returns correct shape', () => {
     global.fetch = undefined;
   });
 
+  it('sends a compact structured-output request to Gemini', async () => {
+    global.fetch = jest.fn(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve(makeGeminiResponse('Trim this prompt.', ['Shortened wording'])),
+      })
+    );
+
+    await rewrite('Please help me trim this prompt down.', 'valid-api-key');
+
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+
+    const [, options] = global.fetch.mock.calls[0];
+    const body = JSON.parse(options.body);
+
+    expect(body.systemInstruction.parts[0].text).toContain('Rewrite this user prompt');
+    expect(body.contents[0].parts[0].text).toBe('Please help me trim this prompt down.');
+    expect(body.generationConfig).toMatchObject({
+      temperature: 0.1,
+      maxOutputTokens: 120,
+      responseMimeType: 'application/json',
+    });
+    expect(body.generationConfig.responseSchema).toMatchObject({
+      type: 'object',
+      required: ['rewritten', 'changes'],
+    });
+  });
+
   it('returns source: "Gemini" and all required fields on a valid response', async () => {
     const rewrittenText = 'Explain quantum computing.';
     const changes = ['Removed filler phrase', 'Simplified wording'];

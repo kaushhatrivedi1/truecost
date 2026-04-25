@@ -13,42 +13,49 @@ import { localRewrite, FILLER_REMOVALS, VERBOSE_REPLACEMENTS } from '../local-re
 describe('localRewrite — filler removal', () => {
   it('removes "please " from the start of a prompt', () => {
     const { rewritten } = localRewrite('Please summarise this document.');
-    expect(rewritten).toBe('summarise this document.');
+    expect(rewritten).toBe('Summarise this document.');
   });
 
   it('removes "can you " from a prompt', () => {
     const { rewritten } = localRewrite('Can you explain how this works?');
-    expect(rewritten).toBe('explain how this works?');
+    expect(rewritten).toBe('Explain how this works?');
   });
 
   it('removes "could you " from a prompt', () => {
     const { rewritten } = localRewrite('Could you write a function for me?');
-    expect(rewritten).toBe('write a function for me?');
+    expect(rewritten).toBe('Write a function for me?');
   });
 
   it('removes "kindly " from a prompt', () => {
     const { rewritten } = localRewrite('Kindly provide a summary.');
-    expect(rewritten).toBe('provide a summary.');
+    expect(rewritten).toBe('Provide a summary.');
   });
 
   it('removes "i want you to " from a prompt', () => {
     const { rewritten } = localRewrite('I want you to write a poem.');
-    expect(rewritten).toBe('write a poem.');
+    expect(rewritten).toBe('Write a poem.');
   });
 
   it('removes "i need you to " from a prompt', () => {
     const { rewritten } = localRewrite('I need you to fix this bug.');
-    expect(rewritten).toBe('fix this bug.');
+    expect(rewritten).toBe('Fix this bug.');
   });
 
   it('removes "i would like you to " from a prompt', () => {
     const { rewritten } = localRewrite('I would like you to review this code.');
-    expect(rewritten).toBe('review this code.');
+    expect(rewritten).toBe('Review this code.');
   });
 
   it('removes "would you mind " from a prompt', () => {
     const { rewritten } = localRewrite('Would you mind explaining this?');
-    expect(rewritten).toBe('explaining this?');
+    expect(rewritten).toBe('Explaining this?');
+  });
+
+  it('removes greeting and conversational filler from a time question', () => {
+    const { rewritten } = localRewrite(
+      'Good morning I wanted to know what is the time, I mean what is the time rn, like currently'
+    );
+    expect(rewritten).toBe('What is the time now?');
   });
 });
 
@@ -65,17 +72,17 @@ describe('localRewrite — verbose replacements', () => {
 
   it('replaces "at this point in time" with "now"', () => {
     const { rewritten } = localRewrite('At this point in time, we should refactor.');
-    expect(rewritten).toBe('now, we should refactor.');
+    expect(rewritten).toBe('Now, we should refactor.');
   });
 
   it('replaces "prior to" with "before"', () => {
     const { rewritten } = localRewrite('Prior to deployment, run the tests.');
-    expect(rewritten).toBe('before deployment, run the tests.');
+    expect(rewritten).toBe('Before deployment, run the tests.');
   });
 
   it('replaces "subsequent to" with "after"', () => {
     const { rewritten } = localRewrite('Subsequent to the review, apply the changes.');
-    expect(rewritten).toBe('after the review, apply the changes.');
+    expect(rewritten).toBe('After the review, apply the changes.');
   });
 
   it('replaces "a large number of" with "many"', () => {
@@ -88,21 +95,26 @@ describe('localRewrite — verbose replacements', () => {
     expect(rewritten).toBe('Only few tests failed.');
   });
 
+  it('replaces "rn" with "now"', () => {
+    const { rewritten } = localRewrite('What is the time rn?');
+    expect(rewritten).toBe('What is the time now?');
+  });
+
   it('removes "it is important to note that"', () => {
     const { rewritten } = localRewrite('It is important to note that this is experimental.');
-    expect(rewritten).toBe('this is experimental.');
+    expect(rewritten).toBe('This is experimental.');
   });
 
   it('removes "it should be noted that"', () => {
     const { rewritten } = localRewrite('It should be noted that the API is deprecated.');
-    expect(rewritten).toBe('the API is deprecated.');
+    expect(rewritten).toBe('The API is deprecated.');
   });
 
   it('removes "please " filler (FILLER_REMOVALS runs before verbose replacements)', () => {
     // "please " is stripped globally by FILLER_REMOVALS, so "please note that" verbose
     // pattern never fires — the result is "note that ..." rather than the full phrase removed
     const { rewritten } = localRewrite('Please note that this feature is in beta.');
-    expect(rewritten).toBe('note that this feature is in beta.');
+    expect(rewritten).toBe('Note that this feature is in beta.');
   });
 });
 
@@ -164,7 +176,7 @@ describe('localRewrite — combined filler + verbose', () => {
   it('applies both filler removal and verbose replacement in sequence', () => {
     const { rewritten } = localRewrite('Please use this in order to improve performance.');
     // "Please " removed, "in order to" → "to"
-    expect(rewritten).toBe('use this to improve performance.');
+    expect(rewritten).toBe('Use this to improve performance.');
   });
 });
 
@@ -179,7 +191,7 @@ describe('FILLER_REMOVALS', () => {
   });
 
   it('contains 8 patterns', () => {
-    expect(FILLER_REMOVALS).toHaveLength(8);
+    expect(FILLER_REMOVALS).toHaveLength(18);
   });
 });
 
@@ -193,6 +205,6 @@ describe('VERBOSE_REPLACEMENTS', () => {
   });
 
   it('contains 20 pairs', () => {
-    expect(VERBOSE_REPLACEMENTS).toHaveLength(20);
+    expect(VERBOSE_REPLACEMENTS).toHaveLength(29);
   });
 });

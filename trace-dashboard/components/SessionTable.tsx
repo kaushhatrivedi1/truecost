@@ -104,10 +104,10 @@ export default function SessionTable({ sessions }: SessionTableProps) {
           <tbody className="divide-y divide-gray-100 bg-white">
             {pageRows.map((s) => (
               <tr key={s.id} className="hover:bg-gray-50">
-                <td className="px-4 py-2 whitespace-nowrap">{new Date(s.timestamp).toLocaleString()}</td>
+                <td className="px-4 py-2 whitespace-nowrap">{s.timestamp.slice(0, 16).replace('T', ' ')}</td>
                 <td className="px-4 py-2 whitespace-nowrap">{s.platform_id}</td>
                 <td className="px-4 py-2 whitespace-nowrap">{s.model_id}</td>
-                <td className="px-4 py-2 whitespace-nowrap text-right">{s.tokens.toLocaleString()}</td>
+                <td className="px-4 py-2 whitespace-nowrap text-right">{s.tokens.toLocaleString('en-US')}</td>
                 <td className="px-4 py-2 whitespace-nowrap text-right">{s.carbon_mg.toFixed(2)}</td>
                 <td className="px-4 py-2 whitespace-nowrap text-right">{s.water_ml.toFixed(4)}</td>
                 <td className="px-4 py-2 whitespace-nowrap text-right">{s.score}</td>

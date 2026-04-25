@@ -1,16 +1,8 @@
 // seed-data.ts — Hardcoded seed data for the dashboard
 // No API keys or credentials in this file.
 
-import type { Session } from './data-utils';
-
-export interface TeamMember {
-  name: string;
-  prompts: number;
-  avgGrade: 'A' | 'B' | 'C' | 'D' | 'F';
-  tokens: number;
-  topIntent: string;
-  intentPct: number;
-}
+import type { Session, TeamMember } from './data-utils';
+export type { TeamMember } from './data-utils';
 
 export const PERSONAL_SEED_DATA: Session[] = [
   // --- chatgpt (6 sessions) ---
@@ -57,9 +49,9 @@ export const PERSONAL_SEED_DATA: Session[] = [
 ];
 
 export const TEAM_SEED_DATA: TeamMember[] = [
-  { name: 'Alex Chen',    prompts: 340, avgGrade: 'B', tokens: 89000, topIntent: 'coding',      intentPct: 70 },
-  { name: 'Priya Sharma', prompts: 210, avgGrade: 'C', tokens: 67000, topIntent: 'research',    intentPct: 60 },
-  { name: 'Marcus Webb',  prompts: 180, avgGrade: 'D', tokens: 71000, topIntent: 'exploratory', intentPct: 80 },
-  { name: 'Sofia Reyes',  prompts: 290, avgGrade: 'A', tokens: 54000, topIntent: 'writing',     intentPct: 65 },
-  { name: 'James Park',   prompts: 155, avgGrade: 'B', tokens: 48000, topIntent: 'coding',      intentPct: 55 },
+  { name: 'Alex Chen',    prompts: 18, avgGrade: 'B', tokens: 74, topIntent: 'coding',      intentPct: 67 },
+  { name: 'Priya Sharma', prompts: 12, avgGrade: 'C', tokens: 58, topIntent: 'research',    intentPct: 58 },
+  { name: 'Marcus Webb',  prompts: 9,  avgGrade: 'D', tokens: 62, topIntent: 'exploratory', intentPct: 78 },
+  { name: 'Sofia Reyes',  prompts: 15, avgGrade: 'A', tokens: 43, topIntent: 'writing',     intentPct: 60 },
+  { name: 'James Park',   prompts: 7,  avgGrade: 'B', tokens: 39, topIntent: 'coding',      intentPct: 57 },
 ];

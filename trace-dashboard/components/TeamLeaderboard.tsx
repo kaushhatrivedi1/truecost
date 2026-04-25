@@ -67,12 +67,17 @@ export default function TeamLeaderboard({ members, sortMetric = 'tokens' }: Team
           </thead>
           <tbody>
             {sorted.map((m, i) => (
-              <tr key={m.name} className="border-b border-gray-100">
+              <tr key={m.name} className={`border-b border-gray-100 ${m.name === 'You' ? 'bg-indigo-50' : ''}`}>
                 <td className="py-2 pr-4 font-medium text-gray-400">{i + 1}</td>
-                <td className="py-2 pr-4 font-medium">{m.name}</td>
+                <td className="py-2 pr-4 font-medium">
+                  {m.name}
+                  {m.name === 'You' && (
+                    <span className="ml-2 text-xs font-normal text-indigo-500 bg-indigo-100 px-1.5 py-0.5 rounded">live</span>
+                  )}
+                </td>
                 <td className="py-2 pr-4">{m.prompts}</td>
                 <td className="py-2 pr-4">{m.avgGrade}</td>
-                <td className="py-2 pr-4">{m.tokens.toLocaleString()}</td>
+                <td className="py-2 pr-4">{m.tokens.toLocaleString('en-US')}</td>
                 <td className="py-2 pr-4 capitalize">{m.topIntent}</td>
                 <td className="py-2">{m.intentPct}%</td>
               </tr>

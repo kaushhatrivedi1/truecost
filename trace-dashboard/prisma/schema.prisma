@@ -1,0 +1,29 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Session {
+  id            String   @id
+  userId        String
+  userName      String   @default("You")
+  timestamp     DateTime
+  platformId    String
+  modelId       String
+  tokens        Int
+  carbonMg      Float
+  waterMl       Float
+  score         Int
+  grade         String
+  intent        String
+  promptPreview String
+  suggestion    String   @default("")
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}

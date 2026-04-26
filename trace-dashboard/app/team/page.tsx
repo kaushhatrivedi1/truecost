@@ -3,8 +3,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { TEAM_SEED_DATA } from '../../lib/seed-data';
 import type { TeamMember } from '../../lib/seed-data';
-import type { Session } from '../../lib/data-utils';
-import { sessionsToCurrentUser } from '../../lib/data-utils';
 import StatCard from '../../components/StatCard';
 import TeamLeaderboard from '../../components/TeamLeaderboard';
 import TeamBarChart from '../../components/TeamBarChart';
@@ -14,27 +12,22 @@ import InsightCard from '../../components/InsightCard';
 const DISCLAIMER = 'Estimates based on published research. Actual values may vary.';
 const DEFAULT_ENERGY = 0.0021;
 
-type DataSource = 'seed' | 'extension';
+type DataSource = 'seed' | 'api';
 
 export default function TeamPage() {
   const [members, setMembers] = useState<TeamMember[]>(TEAM_SEED_DATA);
   const [dataSource, setDataSource] = useState<DataSource>('seed');
 
   useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      if (event.source !== window) return;
-      if (event.data?.type !== 'TRACE_DATA') return;
-      const data = event.data.data as { sessions?: Session[] } | undefined;
-      if (data?.sessions && Array.isArray(data.sessions) && data.sessions.length > 0) {
-        const you = sessionsToCurrentUser(data.sessions, 'You');
-        setMembers([you, ...TEAM_SEED_DATA]);
-        setDataSource('extension');
-      }
-    };
-
-    window.addEventListener('message', handleMessage);
-    window.postMessage({ type: 'TRACE_REQUEST_DATA' }, '*');
-    return () => window.removeEventListener('message', handleMessage);
+    fetch('/api/team')
+      .then((r) => r.json())
+      .then((json: { members?: TeamMember[] }) => {
+        if (json.members && json.members.length > 0) {
+          setMembers(json.members);
+          setDataSource('api');
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const totalTokens = useMemo(() => members.reduce((s, m) => s + m.tokens, 0), [members]);
@@ -64,41 +57,37 @@ export default function TeamPage() {
   }, [members]);
 
   const sourceBadge =
-    dataSource === 'extension'
-      ? { label: 'Live from Extension', className: 'bg-green-100 text-green-700 border-green-200' }
-      : { label: 'Sample Data',          className: 'bg-gray-100 text-gray-500 border-gray-200' };
-
-  const leaderboardLabel = 'Leaderboard';
-  const tokensChartLabel = 'Tokens per Member';
+    dataSource === 'api'
+      ? { label: 'Live from Database', className: 'bg-blue-100 text-blue-700 border-blue-200' }
+      : { label: 'Sample Data', className: 'bg-gray-100 text-gray-500 border-gray-200' };
 
   return (
     <div className="space-y-8">
       <div className="flex items-center gap-3">
         <h1 className="text-2xl font-bold">Team Leaderboard</h1>
         <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${sourceBadge.className}`}>
-          {dataSource === 'extension' && <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-500 mr-1 animate-pulse" />}
+          {dataSource === 'api' && (
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 mr-1 animate-pulse" />
+          )}
           {sourceBadge.label}
         </span>
       </div>
 
-      {/* Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard label="Total Tokens" value={totalTokens.toLocaleString('en-US')} unit="est." disclaimer={DISCLAIMER} />
         <StatCard label="Total CO₂e" value={totalCarbon.toFixed(2)} unit="mg" disclaimer={DISCLAIMER} />
         <StatCard label="Total Water" value={totalWater.toFixed(2)} unit="ml" disclaimer={DISCLAIMER} />
       </div>
 
-      {/* Leaderboard */}
       <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-        <h2 className="text-sm font-medium text-gray-600 mb-3">{leaderboardLabel}</h2>
+        <h2 className="text-sm font-medium text-gray-600 mb-3">Leaderboard</h2>
         <TeamLeaderboard members={members} sortMetric="tokens" />
         <p className="text-xs text-gray-400 mt-2 italic">{DISCLAIMER}</p>
       </div>
 
-      {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-          <h2 className="text-sm font-medium text-gray-600 mb-3">{tokensChartLabel}</h2>
+          <h2 className="text-sm font-medium text-gray-600 mb-3">Tokens per Member</h2>
           <TeamBarChart data={members} />
           <p className="text-xs text-gray-400 mt-2 italic">{DISCLAIMER}</p>
         </div>
@@ -109,7 +98,6 @@ export default function TeamPage() {
         </div>
       </div>
 
-      {/* Insight Cards */}
       {topUser && bestGradeUser && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <InsightCard

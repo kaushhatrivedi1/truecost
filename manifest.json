@@ -34,7 +34,8 @@
   ],
   "permissions": ["storage", "activeTab", "tabs", "downloads"],
   "host_permissions": [
-    "https://generativelanguage.googleapis.com/*"
+    "https://generativelanguage.googleapis.com/*",
+    "http://localhost:3000/*"
   ],
   "action": {
     "default_icon": {
